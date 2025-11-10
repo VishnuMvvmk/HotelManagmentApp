@@ -38,23 +38,22 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import kotlin.jvm.java
 
-class SignupActivity : ComponentActivity() {
+class SignInActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            SignUpScreen()
+            SignInScreen()
         }
     }
 }
 
 
 @Composable
-fun SignUpScreen() {
+fun SignInScreen() {
 
-    var guestBookingUserName by remember { mutableStateOf("") }
     var guestBookingMail by remember { mutableStateOf("") }
-    var guestBookingPlace by remember { mutableStateOf("") }
     var guestBookingPassword by remember { mutableStateOf("") }
 
     val context = LocalContext.current as Activity
@@ -100,31 +99,6 @@ fun SignUpScreen() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp),
-                value = guestBookingUserName,
-                onValueChange = { guestBookingUserName = it },
-                label = { Text("Enter Name") },
-                colors = TextFieldDefaults.colors(
-                    unfocusedContainerColor = Color.White,
-                    focusedContainerColor = Color.White,
-                ),
-                shape = RoundedCornerShape(32.dp),
-                trailingIcon = {
-                    Image(
-                        modifier = Modifier.size(36.dp),
-                        painter = painterResource(id = R.drawable.ic_name), // Replace with your actual drawable resource
-                        contentDescription = "Name Icon"
-                    )
-
-                }
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-
-            OutlinedTextField(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp),
                 value = guestBookingMail,
                 onValueChange = { guestBookingMail = it },
                 label = { Text("Enter Email") },
@@ -144,31 +118,6 @@ fun SignUpScreen() {
             )
 
             Spacer(modifier = Modifier.height(6.dp))
-
-            OutlinedTextField(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp),
-                value = guestBookingPlace,
-                onValueChange = { guestBookingPlace = it },
-                label = { Text("Enter Place") },
-                colors = TextFieldDefaults.colors(
-                    unfocusedContainerColor = Color.White,
-                    focusedContainerColor = Color.White,
-                ),
-                shape = RoundedCornerShape(32.dp),
-                trailingIcon = {
-                    Image(
-                        modifier = Modifier.size(36.dp),
-                        painter = painterResource(id = R.drawable.ic_place), // Replace with your actual drawable resource
-                        contentDescription = "Place Icon"
-                    )
-
-                }
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
 
             OutlinedTextField(
                 modifier = Modifier
@@ -199,30 +148,20 @@ fun SignUpScreen() {
                 Text(
                     modifier = Modifier
                         .clickable {
-                            when {
+                            when{
 
-                                guestBookingUserName.isBlank() -> {
-                                    Toast.makeText(context, "UserName missing", Toast.LENGTH_SHORT)
-                                        .show()
-
-                                }
 
                                 guestBookingMail.isBlank() -> {
-                                    Toast.makeText(context, "EmailId missing", Toast.LENGTH_SHORT)
+                                    Toast.makeText(context, "MailID missing", Toast.LENGTH_SHORT)
                                         .show()
                                 }
-
-                                guestBookingPlace.isBlank() -> {
-                                    Toast.makeText(context, "Place missing", Toast.LENGTH_SHORT)
-                                        .show()
-                                }
-
                                 guestBookingPassword.isBlank() -> {
                                     Toast.makeText(context, "Password missing", Toast.LENGTH_SHORT)
                                         .show()
-                                }
 
+                                }
                                 else -> {
+
 
                                 }
                             }
@@ -238,7 +177,7 @@ fun SignUpScreen() {
                             shape = RoundedCornerShape(8.dp)
                         )
                         .padding(vertical = 6.dp, horizontal = 12.dp),
-                    text = "SignUp",
+                    text = "SignIn",
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.titleMedium.copy(
                         color = colorResource(id = R.color.firsthome_color),
@@ -251,10 +190,10 @@ fun SignUpScreen() {
                     modifier = Modifier
                         .padding(vertical = 6.dp, horizontal = 24.dp)
                         .clickable {
-                            context.startActivity(Intent(context, SignInActivity::class.java))
+                            context.startActivity(Intent(context, SignupActivity::class.java))
                             context.finish()
                         },
-                    text = "SignIn To My Account",
+                    text = "Signup For An Account",
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.titleMedium.copy(
                         color = Color.Black,
