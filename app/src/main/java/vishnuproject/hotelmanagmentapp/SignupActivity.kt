@@ -151,7 +151,7 @@ fun SignUpScreen() {
                     .padding(horizontal = 12.dp),
                 value = guestBookingPlace,
                 onValueChange = { guestBookingPlace = it },
-                label = { Text("Enter Place") },
+                label = { Text("Enter Age") },
                 colors = TextFieldDefaults.colors(
                     unfocusedContainerColor = Color.White,
                     focusedContainerColor = Color.White,
@@ -160,8 +160,8 @@ fun SignUpScreen() {
                 trailingIcon = {
                     Image(
                         modifier = Modifier.size(36.dp),
-                        painter = painterResource(id = R.drawable.ic_place), // Replace with your actual drawable resource
-                        contentDescription = "Place Icon"
+                        painter = painterResource(id = R.drawable.ic_age), // Replace with your actual drawable resource
+                        contentDescription = "Age Icon"
                     )
 
                 }
