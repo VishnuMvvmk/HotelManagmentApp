@@ -162,6 +162,8 @@ fun SignInScreen() {
                                 }
                                 else -> {
 
+                                    context.startActivity(Intent(context, HomeActivity::class.java))
+                                    context.finish()
 
                                 }
                             }
