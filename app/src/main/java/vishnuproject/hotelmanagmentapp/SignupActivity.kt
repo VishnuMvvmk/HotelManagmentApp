@@ -2,6 +2,8 @@ package vishnuproject.hotelmanagmentapp
 
 
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
@@ -37,6 +39,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
 class SignupActivity : ComponentActivity() {
@@ -57,7 +60,7 @@ fun SignUpScreen() {
     var guestBookingPlace by remember { mutableStateOf("") }
     var guestBookingPassword by remember { mutableStateOf("") }
 
-    val context = LocalContext.current as Activity
+    val context = LocalContext.current.findActivity()
 
     Column(
         modifier = Modifier
@@ -251,7 +254,7 @@ fun SignUpScreen() {
                     modifier = Modifier
                         .padding(vertical = 6.dp, horizontal = 24.dp)
                         .clickable {
-                            context.startActivity(Intent(context, SignInActivity::class.java))
+                            context!!.startActivity(Intent(context, SignInActivity::class.java))
                             context.finish()
                         },
                     text = "SignIn To My Account",
@@ -279,4 +282,16 @@ fun SignUpScreen() {
 
     }
 
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SignUpScreenPreview() {
+    SignUpScreen()
+}
+
+fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }

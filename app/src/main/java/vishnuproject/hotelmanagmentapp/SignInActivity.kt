@@ -37,6 +37,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlin.jvm.java
 
@@ -56,7 +57,7 @@ fun SignInScreen() {
     var guestBookingMail by remember { mutableStateOf("") }
     var guestBookingPassword by remember { mutableStateOf("") }
 
-    val context = LocalContext.current as Activity
+    val context = LocalContext.current.findActivity()
 
     Column(
         modifier = Modifier
@@ -162,7 +163,7 @@ fun SignInScreen() {
                                 }
                                 else -> {
 
-                                    context.startActivity(Intent(context, HomeActivity::class.java))
+                                    context!!.startActivity(Intent(context, HomeActivity::class.java))
                                     context.finish()
 
                                 }
@@ -192,7 +193,7 @@ fun SignInScreen() {
                     modifier = Modifier
                         .padding(vertical = 6.dp, horizontal = 24.dp)
                         .clickable {
-                            context.startActivity(Intent(context, SignupActivity::class.java))
+                            context!!.startActivity(Intent(context, SignupActivity::class.java))
                             context.finish()
                         },
                     text = "Signup For An Account",
@@ -220,4 +221,11 @@ fun SignInScreen() {
 
     }
 
+}
+
+
+@Preview(showBackground = true)
+@Composable
+fun SignInScreenPreview() {
+    SignInScreen()
 }

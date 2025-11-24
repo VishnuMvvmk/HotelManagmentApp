@@ -29,6 +29,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -137,4 +138,10 @@ fun BookingLaunch() {
         Spacer(modifier = Modifier.weight(1f))
 
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun BookingLaunchPreview() {
+    BookingLaunch()
 }
