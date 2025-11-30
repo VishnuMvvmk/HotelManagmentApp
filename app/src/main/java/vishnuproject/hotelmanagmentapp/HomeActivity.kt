@@ -1,5 +1,6 @@
 package vishnuproject.hotelmanagmentapp
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -15,9 +16,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import vishnuproject.hotelmanagmentapp.admin.AddRoomActivity
+import vishnuproject.hotelmanagmentapp.admin.ViewRoomsActivity
 
 class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -172,15 +176,28 @@ fun QuickActionsSection() {
 @Composable
 fun QuickActionCard(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier) {
 
+    val context = LocalContext.current
+
     Card(
         modifier = modifier
             .height(95.dp)
-            .clickable {},
+            .clickable {
+                if(title=="Add Booking")
+                {
+                    context.startActivity(Intent(context, AddRoomActivity::class.java))
+                }
+                else if(title=="View Rooms")
+                {
+                    context.startActivity(Intent(context, ViewRoomsActivity::class.java))
+                }
+            },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(
-            Modifier.padding(16.dp),
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

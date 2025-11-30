@@ -210,7 +210,7 @@ fun SignInScreen() {
         }
 
         Image(
-            painter = painterResource(id = R.drawable.wave_down), // Replace with your actual SVG drawable
+            painter = painterResource(id = R.drawable.wave_down),
             contentDescription = null,
             contentScale = ContentScale.Fit,
             modifier = Modifier.fillMaxWidth()
