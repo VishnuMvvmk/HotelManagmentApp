@@ -1,7 +1,6 @@
 package vishnuproject.hotelmanagmentapp
 
 
-import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
@@ -39,7 +38,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import kotlin.jvm.java
+import com.google.firebase.database.FirebaseDatabase
+import vishnuproject.hotelmanagmentapp.customer.CustomerHomeActivity
 
 class SignInActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -149,22 +149,96 @@ fun SignInScreen() {
                 Text(
                     modifier = Modifier
                         .clickable {
-                            when{
+                            when {
 
 
                                 guestBookingMail.isBlank() -> {
                                     Toast.makeText(context, "MailID missing", Toast.LENGTH_SHORT)
                                         .show()
                                 }
+
                                 guestBookingPassword.isBlank() -> {
                                     Toast.makeText(context, "Password missing", Toast.LENGTH_SHORT)
                                         .show()
 
                                 }
+
                                 else -> {
 
-                                    context!!.startActivity(Intent(context, HomeActivity::class.java))
-                                    context.finish()
+                                    val database = FirebaseDatabase.getInstance()
+                                    val databaseReference = database.reference
+
+                                    val sanitizedEmail = guestBookingMail.replace(".", ",")
+
+                                    databaseReference.child("HotelUsers").child(sanitizedEmail)
+                                        .get()
+                                        .addOnSuccessListener { snapshot ->
+                                            if (snapshot.exists()) {
+                                                val chefData =
+                                                    snapshot.getValue(UserData::class.java)
+                                                chefData?.let {
+
+                                                    if (guestBookingPassword == it.password) {
+
+                                                        UserPrefs.markLoginStatus(context!!, true)
+                                                        UserPrefs.saveEmail(
+                                                            context,
+                                                            email = guestBookingMail
+                                                        )
+                                                        UserPrefs.saveName(context, it.name)
+
+                                                        UserPrefs.saveRole(context,it.role)
+
+
+                                                        Toast.makeText(
+                                                            context,
+                                                            "Login Successfull",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+
+                                                        val userRole = it.role
+
+                                                        if(userRole=="admin")
+                                                        {
+                                                            context.startActivity(
+                                                                Intent(
+                                                                    context,
+                                                                    HomeActivity::class.java
+                                                                )
+                                                            )
+                                                            context.finish()
+                                                        }else{
+                                                            context.startActivity(
+                                                                Intent(
+                                                                    context,
+                                                                    CustomerHomeActivity::class.java
+                                                                )
+                                                            )
+                                                            context.finish()
+                                                        }
+
+
+
+
+                                                    } else {
+                                                        Toast.makeText(
+                                                            context,
+                                                            "Incorrect Credentials",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+                                                    }
+                                                }
+                                            } else {
+                                                Toast.makeText(
+                                                    context,
+                                                    "No User Found",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }.addOnFailureListener { exception ->
+                                            println("Error retrieving data: ${exception.message}")
+                                        }
+
 
                                 }
                             }
@@ -210,7 +284,7 @@ fun SignInScreen() {
         }
 
         Image(
-            painter = painterResource(id = R.drawable.wave_down),
+            painter = painterResource(id = R.drawable.wave_down), // Replace with your actual SVG drawable
             contentDescription = null,
             contentScale = ContentScale.Fit,
             modifier = Modifier.fillMaxWidth()

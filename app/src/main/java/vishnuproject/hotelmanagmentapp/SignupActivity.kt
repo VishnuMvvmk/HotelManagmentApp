@@ -41,6 +41,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.google.firebase.database.FirebaseDatabase
 
 class SignupActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -227,6 +228,51 @@ fun SignUpScreen() {
 
                                 else -> {
 
+                                    val userData = UserData(
+                                        name = guestBookingUserName,
+                                        email = guestBookingMail,
+                                        place = guestBookingPlace,
+                                        password = guestBookingPassword,
+                                        role = "customer"
+                                    )
+
+
+                                    val db = FirebaseDatabase.getInstance()
+                                    val ref = db.getReference("HotelUsers")
+                                    ref.child(userData.email.replace(".", ",")).setValue(userData)
+                                        .addOnCompleteListener { task ->
+                                            if (task.isSuccessful) {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Registration Successful",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+
+
+                                                context!!.startActivity(
+                                                    Intent(
+                                                        context,
+                                                        SignInActivity::class.java
+                                                    )
+                                                )
+                                                context.finish()
+
+                                            } else {
+                                                Toast.makeText(
+                                                    context,
+                                                    "User Registration Failed: ${task.exception?.message}",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }
+                                        .addOnFailureListener { exception ->
+                                            Toast.makeText(
+                                                context,
+                                                "User Registration Failed: ${exception.message}",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+
                                 }
                             }
                         }
@@ -283,6 +329,15 @@ fun SignUpScreen() {
     }
 
 }
+
+data class UserData
+    (
+    var name: String = "",
+    var email: String = "",
+    var place: String = "",
+    var password: String = "",
+    var role: String = ""
+)
 
 @Preview(showBackground = true)
 @Composable

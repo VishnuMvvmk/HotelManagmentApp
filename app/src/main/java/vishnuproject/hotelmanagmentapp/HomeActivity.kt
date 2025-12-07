@@ -7,7 +7,6 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -20,49 +19,133 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.google.firebase.database.*
 import vishnuproject.hotelmanagmentapp.admin.AddRoomActivity
-import vishnuproject.hotelmanagmentapp.admin.ViewRoomsActivity
+import vishnuproject.hotelmanagmentapp.admin.AdminBookedRoomsActivity
+import vishnuproject.hotelmanagmentapp.admin.AdminServicesRequestActivity
+import vishnuproject.hotelmanagmentapp.admin.ManageRoomsActivity
+import vishnuproject.hotelmanagmentapp.admin.RoomModel
+import vishnuproject.hotelmanagmentapp.admin.SetFoodMenuActivity
+import vishnuproject.hotelmanagmentapp.admin.SetHotelContactDetailsActivity
+import vishnuproject.hotelmanagmentapp.customer.BookingModel
+import vishnuproject.hotelmanagmentapp.customer.ProfileActivity
+import java.text.SimpleDateFormat
+import java.util.*
 
 class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        setContent {
-            HotelHomeScreen()
-        }
+        setContent { HotelHomeScreen() }
     }
 }
-
-data class Booking(
-    val id: Int,
-    val customerName: String,
-    val roomType: String,
-    val checkInDate: String
-)
-
-// ------------------------ HOME SCREEN ------------------------
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HotelHomeScreen() {
 
-    val recentBookings = remember {
-        mutableStateOf(
-            listOf(
-                Booking(1, "John Doe", "Deluxe Room", "Today"),
-                Booking(2, "Emma Brown", "Suite Room", "Tomorrow"),
-                Booking(3, "Michael Smith", "Standard Room", "Today")
-            )
-        )
+    val context = LocalContext.current
+    val adminEmail = UserPrefs.getEmail(context)?.replace(".", ",") ?: "unknown_admin"
+
+    var totalRooms by remember { mutableStateOf(0) }
+    var occupiedRooms by remember { mutableStateOf(0) }
+    var availableRooms by remember { mutableStateOf(0) }
+    var todaysBookings by remember { mutableStateOf(0) }
+    var totalRevenue by remember { mutableStateOf(0) }
+
+    // ---------------------------------------------------
+    // LOAD REALTIME STATS FROM FIREBASE
+    // ---------------------------------------------------
+    LaunchedEffect(Unit) {
+
+        val roomsRef = FirebaseDatabase.getInstance().reference
+            .child("Rooms").child(adminEmail)
+
+        val bookingsRef = FirebaseDatabase.getInstance().reference
+            .child("Bookings")
+
+        // ---------- LOAD TOTAL ROOMS ----------
+        roomsRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                totalRooms = snapshot.childrenCount.toInt()
+                availableRooms = totalRooms - occupiedRooms
+            }
+
+            override fun onCancelled(error: DatabaseError) {}
+        })
+
+        // ---------- LOAD BOOKINGS ----------
+        bookingsRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+
+                occupiedRooms = 0
+                todaysBookings = 0
+                totalRevenue = 0
+
+                val today = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(Date())
+
+                val bookingsList = mutableListOf<BookingModel>()
+                val roomsMap = mutableMapOf<String, RoomModel>()
+
+                // Load all room prices first
+                roomsRef.get().addOnSuccessListener { roomSnap ->
+                    roomSnap.children.forEach { roomNode ->
+                        val room = roomNode.getValue(RoomModel::class.java)
+                        if (room != null) roomsMap[room.roomId] = room
+                    }
+
+                    // Iterate through all users' bookings
+                    snapshot.children.forEach { userNode ->
+                        userNode.children.forEach { bookSnap ->
+                            val booking = bookSnap.getValue(BookingModel::class.java) ?: return@forEach
+                            bookingsList.add(booking)
+                        }
+                    }
+
+                    for (b in bookingsList) {
+
+                        // Today's bookings
+                        if (b.fromDate == today) todaysBookings++
+
+                        // Calculate occupied rooms (if today falls between fromDate & toDate)
+                        try {
+                            val sdf = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
+                            val todayMillis = sdf.parse(today)?.time ?: 0
+                            val fromMillis = sdf.parse(b.fromDate)?.time ?: 0
+                            val toMillis = sdf.parse(b.toDate)?.time ?: 0
+
+                            if (todayMillis in fromMillis..toMillis) {
+                                occupiedRooms++
+                            }
+                        } catch (_: Exception) {}
+
+                        // Revenue calculation
+                        val room = roomsMap[b.roomId]
+                        val price = room?.price?.toIntOrNull() ?: 0
+                        totalRevenue += price
+                    }
+
+                    availableRooms = totalRooms - occupiedRooms
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {}
+        })
     }
+
+    // ---------------------------------------------------
+    // UI STARTS HERE
+    // ---------------------------------------------------
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("Hotel Manager") },
                 actions = {
-                    IconButton(onClick = {}) {
-                        Icon(Icons.Default.Search, contentDescription = "Search")
+                    IconButton(onClick = {
+                        context.startActivity(Intent(context, ProfileActivity::class.java))
+
+                    }) {
+                        Icon(Icons.Default.AccountBox, contentDescription = "Profile")
                     }
                 }
             )
@@ -75,24 +158,16 @@ fun HotelHomeScreen() {
                 .padding(16.dp)
         ) {
 
-            // ---------- Dashboard Boxes ----------
-            item { DashboardSection() }
-
-            // ---------- Quick Actions ----------
-            item { QuickActionsSection() }
-
-            // ---------- Recent Bookings ----------
             item {
-                Text(
-                    "Recent Bookings",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    modifier = Modifier.padding(vertical = 12.dp)
+                DashboardSection(
+                    occupiedRooms,
+                    availableRooms,
+                    todaysBookings,
+                    "£$totalRevenue"
                 )
             }
 
-            items(recentBookings.value) { booking ->
-                BookingListItem(booking)
-            }
+            item { QuickActionsSection() }
         }
     }
 }
@@ -100,7 +175,12 @@ fun HotelHomeScreen() {
 // ------------------------ DASHBOARD ------------------------
 
 @Composable
-fun DashboardSection() {
+fun DashboardSection(
+    occupiedRooms: Int,
+    availableRooms: Int,
+    todaysBookings: Int,
+    totalRevenue: String
+) {
 
     Text(
         "Dashboard",
@@ -111,26 +191,30 @@ fun DashboardSection() {
     Column {
 
         Row(Modifier.fillMaxWidth()) {
-            DashboardCard("Occupied Rooms", "42", Icons.Default.Home, Modifier.weight(1f))
+            DashboardCard("Occupied Rooms", occupiedRooms.toString(), Icons.Default.MeetingRoom, Modifier.weight(1f))
             Spacer(Modifier.width(12.dp))
-            DashboardCard("Available Rooms", "18", Icons.Default.Home, Modifier.weight(1f))
+            DashboardCard("Available Rooms", availableRooms.toString(), Icons.Default.DoorBack, Modifier.weight(1f))
         }
 
         Spacer(Modifier.height(12.dp))
 
         Row(Modifier.fillMaxWidth()) {
-            DashboardCard("Today's Bookings", "12", Icons.Default.Home, Modifier.weight(1f))
+            DashboardCard("Today's Bookings", todaysBookings.toString(), Icons.Default.Event, Modifier.weight(1f))
             Spacer(Modifier.width(12.dp))
-            DashboardCard("Total Revenue", "₹86,000", Icons.Default.DateRange, Modifier.weight(1f))
+            DashboardCard("Total Revenue", totalRevenue, Icons.Default.CurrencyPound, Modifier.weight(1f))
         }
     }
 }
 
 @Composable
-fun DashboardCard(title: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier) {
+fun DashboardCard(
+    title: String,
+    value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    modifier: Modifier
+) {
     Card(
-        modifier = modifier
-            .height(110.dp),
+        modifier = modifier.height(110.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer)
     ) {
@@ -152,6 +236,8 @@ fun DashboardCard(title: String, value: String, icon: androidx.compose.ui.graphi
 @Composable
 fun QuickActionsSection() {
 
+    val context = LocalContext.current
+
     Text(
         "Quick Actions",
         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
@@ -159,45 +245,58 @@ fun QuickActionsSection() {
     )
 
     Row(Modifier.fillMaxWidth()) {
-        QuickActionCard("Add Booking", Icons.Default.Add, Modifier.weight(1f))
+        QuickActionCard("Add Room", Icons.Default.Add, Modifier.weight(1f)) {
+            context.startActivity(Intent(context, AddRoomActivity::class.java))
+        }
         Spacer(Modifier.width(12.dp))
-        QuickActionCard("Add Customer", Icons.Default.Person, Modifier.weight(1f))
+        QuickActionCard("Manage Rooms", Icons.Default.Person, Modifier.weight(1f)) {
+            context.startActivity(Intent(context, ManageRoomsActivity::class.java))
+        }
     }
 
     Spacer(Modifier.height(12.dp))
 
     Row(Modifier.fillMaxWidth()) {
-        QuickActionCard("View Rooms", Icons.Default.Home, Modifier.weight(1f))
+        QuickActionCard("Food Menu", Icons.Default.Fastfood, Modifier.weight(1f)) {
+            context.startActivity(Intent(context, SetFoodMenuActivity::class.java))
+        }
         Spacer(Modifier.width(12.dp))
-        QuickActionCard("Manage Staff", Icons.Default.Person, Modifier.weight(1f))
+        QuickActionCard("Contact Details", Icons.Default.Phone, Modifier.weight(1f)) {
+            context.startActivity(Intent(context, SetHotelContactDetailsActivity::class.java))
+        }
+
+    }
+
+    Spacer(Modifier.height(12.dp))
+
+    Row(Modifier.fillMaxWidth()) {
+        QuickActionCard("Service Request", Icons.Default.CleaningServices, Modifier.weight(1f)) {
+            context.startActivity(Intent(context, AdminServicesRequestActivity::class.java))
+        }
+        Spacer(Modifier.width(12.dp))
+        QuickActionCard("Bookings", Icons.Default.Bookmark, Modifier.weight(1f)) {
+            context.startActivity(Intent(context, AdminBookedRoomsActivity::class.java))
+        }
+
     }
 }
 
 @Composable
-fun QuickActionCard(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier) {
-
-    val context = LocalContext.current
-
+fun QuickActionCard(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    modifier: Modifier,
+    onClick: () -> Unit
+) {
     Card(
         modifier = modifier
             .height(95.dp)
-            .clickable {
-                if(title=="Add Booking")
-                {
-                    context.startActivity(Intent(context, AddRoomActivity::class.java))
-                }
-                else if(title=="View Rooms")
-                {
-                    context.startActivity(Intent(context, ViewRoomsActivity::class.java))
-                }
-            },
+            .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(
-            Modifier
-                .fillMaxSize()
-                .padding(16.dp),
+            Modifier.fillMaxSize().padding(16.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -208,39 +307,8 @@ fun QuickActionCard(title: String, icon: androidx.compose.ui.graphics.vector.Ima
     }
 }
 
-// ------------------------ BOOKING ITEM ------------------------
-
-@Composable
-fun BookingListItem(booking: Booking) {
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        shape = RoundedCornerShape(14.dp)
-    ) {
-
-        Row(
-            Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(Icons.Default.Home, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-
-            Spacer(Modifier.width(12.dp))
-
-            Column(Modifier.weight(1f)) {
-                Text(booking.customerName, fontWeight = FontWeight.Bold)
-                Text(booking.roomType, color = Color.Gray)
-                Text("Check-in: ${booking.checkInDate}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
-            }
-
-            Icon(Icons.Default.KeyboardArrowRight, contentDescription = null, modifier = Modifier.size(18.dp))
-        }
-    }
-}
-
 @Preview(showBackground = true)
 @Composable
-fun HotelHomeScreenPreview() {
+fun PreviewScreen() {
     HotelHomeScreen()
 }

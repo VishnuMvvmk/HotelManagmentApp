@@ -35,8 +35,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import vishnuproject.hotelmanagmentapp.UserPrefs
+import vishnuproject.hotelmanagmentapp.customer.CustomerHomeActivity
 import vishnuproject.hotelmanagmentapp.ui.theme.HotelManagmentAppTheme
-import kotlin.jvm.java
 
 
 class MainActivity : ComponentActivity() {
@@ -53,8 +54,7 @@ class MainActivity : ComponentActivity() {
 
 
 @Composable
-fun HotelLaunchCheck()
-{
+fun HotelLaunchCheck() {
     val context = LocalContext.current as Activity
     var showSplash by remember { mutableStateOf(true) }
 
@@ -70,8 +70,20 @@ fun HotelLaunchCheck()
         BookingLaunch()
 
     } else {
-        context.startActivity(Intent(context, SignInActivity::class.java))
-        context.finish()
+
+        if (UserPrefs.checkLoginStatus(context)) {
+
+            if (UserPrefs.getRole(context) == "admin") {
+                context.startActivity(Intent(context, HomeActivity::class.java))
+                context.finish()
+            } else {
+                context.startActivity(Intent(context, CustomerHomeActivity::class.java))
+                context.finish()
+            }
+        } else {
+            context.startActivity(Intent(context, SignInActivity::class.java))
+            context.finish()
+        }
     }
 
 }
@@ -115,15 +127,18 @@ fun BookingLaunch() {
 
             Text(
                 text = "Hotel Management App",
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold))
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
+            )
 
             Text(
                 text = "By",
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold))
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
+            )
 
             Text(
                 text = "Vishnu",
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold))
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
+            )
 
         }
 

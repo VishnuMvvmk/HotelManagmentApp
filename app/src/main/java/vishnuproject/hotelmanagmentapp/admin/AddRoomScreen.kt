@@ -1,11 +1,19 @@
 package vishnuproject.hotelmanagmentapp.admin
 
-import android.app.Activity
+import android.content.ContentResolver
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Bundle
+import android.util.Base64
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -19,16 +27,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,14 +49,18 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -56,8 +69,20 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.database.FirebaseDatabase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.FormBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.json.JSONObject
+import vishnuproject.hotelmanagmentapp.UserPrefs
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
+import java.util.UUID
 
-
+// ----------------- Amenity model & list -----------------
 data class AmenityItem(val id: String, val label: String)
 
 fun allAmenities(): List<AmenityItem> = listOf(
@@ -83,7 +108,7 @@ fun allAmenities(): List<AmenityItem> = listOf(
     AmenityItem("child_friendly", "Child Friendly")
 )
 
-
+// ----------------- UI Chips -----------------
 @Composable
 fun AmenityChip(
     label: String,
@@ -119,7 +144,6 @@ fun AmenityChip(
     }
 }
 
-
 @Composable
 fun SelectedAmenityChip(label: String, modifier: Modifier = Modifier) {
     Surface(
@@ -137,10 +161,61 @@ fun SelectedAmenityChip(label: String, modifier: Modifier = Modifier) {
     }
 }
 
+// ----------------- ImgBB Key -----------------
+private const val IMGBB_API_KEY = "dd2c6f23d315032050b31f06adcfaf3b" // <- your key (from user)
 
+// ----------------- Helper: Read URI to ByteArray -----------------
+suspend fun readBytesFromUri(uri: Uri, contentResolver: ContentResolver): ByteArray =
+    withContext(Dispatchers.IO) {
+        val input: InputStream? = contentResolver.openInputStream(uri)
+        val baos = ByteArrayOutputStream()
+        input?.use { stream ->
+            val buffer = ByteArray(4096)
+            var read: Int
+            while (stream.read(buffer).also { read = it } != -1) {
+                baos.write(buffer, 0, read)
+            }
+        }
+        baos.toByteArray()
+    }
+
+// ----------------- Helper: Upload to ImgBB (returns image URL) -----------------
+suspend fun uploadToImgBB(base64Image: String): String? = withContext(Dispatchers.IO) {
+    try {
+        val client = OkHttpClient()
+
+        // ImgBB accepts 'image' param as base64 string
+        val form = FormBody.Builder()
+            .add("key", IMGBB_API_KEY)
+            .add("image", base64Image)
+            .build()
+
+        val request = Request.Builder()
+            .url("https://api.imgbb.com/1/upload")
+            .post(form)
+            .build()
+
+        client.newCall(request).execute().use { response ->
+            val body = response.body?.string() ?: return@withContext null
+            if (!response.isSuccessful) return@withContext null
+
+            val json = JSONObject(body)
+            // Look for data -> url or display_url
+            val data = json.optJSONObject("data")
+            return@withContext data?.optString("url") ?: data?.optString("display_url")
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        return@withContext null
+    }
+}
+
+// ----------------- Main Composable Screen -----------------
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddRoomScreen() {
+fun AddRoomScreenWithAmenitiesHorizontalWithImageUpload(
+    onBack: () -> Unit = {}
+) {
     val context = LocalContext.current
 
     var roomName by remember { mutableStateOf("") }
@@ -154,24 +229,40 @@ fun AddRoomScreen() {
     val amenities = remember { allAmenities() }
     val selectedAmenityIds = remember { mutableStateListOf<String>() } // stores selected amenity ids
 
+    // Image selection / preview state
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedImageBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var uploading by remember { mutableStateOf(false) }
 
+    // Activity result launcher to pick image
+    // Image picker launcher
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        selectedImageUri = uri
+    }
+
+// Load bitmap preview when URI changes
+    LaunchedEffect(selectedImageUri) {
+        selectedImageUri?.let { uri ->
+            val bytes = readBytesFromUri(uri, context.contentResolver)
+            val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            selectedImageBitmap = bmp
+        }
+    }
+
+
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        "Add Room",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 22.sp
-                    )
-                },
+                title = { Text("Add Room", fontWeight = FontWeight.SemiBold, fontSize = 22.sp) },
                 navigationIcon = {
-                    IconButton(onClick = { (context as Activity).finish() }) {
+                    IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onPrimary
+                            contentDescription = "Back"
                         )
                     }
                 },
@@ -181,7 +272,6 @@ fun AddRoomScreen() {
                 )
             )
         }
-
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -303,6 +393,46 @@ fun AddRoomScreen() {
                 }
             }
 
+            Spacer(Modifier.height(20.dp))
+
+            // Image picker
+            Text("Room Image", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (selectedImageBitmap != null) {
+                    Image(
+                        bitmap = selectedImageBitmap!!.asImageBitmap(),
+                        contentDescription = "Selected Image",
+                        modifier = Modifier
+                            .size(110.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                    )
+                } else {
+                    // placeholder box
+                    Box(
+                        modifier = Modifier
+                            .size(110.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFFEFEFEF)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("No Image", textAlign = TextAlign.Center)
+                    }
+                }
+
+                Column {
+                    Button(onClick = { imagePickerLauncher.launch("image/*") }) {
+                        Text("Select Image")
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Selected image will be uploaded to ImgBB and URL saved to Firebase.",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.width(220.dp)
+                    )
+                }
+            }
 
             Spacer(Modifier.height(20.dp))
 
@@ -357,23 +487,120 @@ fun AddRoomScreen() {
                 Spacer(Modifier.height(8.dp))
             }
 
-
+            // Post button - upload image then save data
             Button(
                 onClick = {
-                    when {
-                        roomName.isBlank() -> Toast.makeText(context, "Please enter room name", Toast.LENGTH_SHORT).show()
-                        price.isBlank() -> Toast.makeText(context, "Please enter price", Toast.LENGTH_SHORT).show()
-                        guests.isBlank() -> Toast.makeText(context, "Please enter guests", Toast.LENGTH_SHORT).show()
-                        else -> {
-                            Toast.makeText(context, "Selected amenities: ${selectedAmenityIds.joinToString()}", Toast.LENGTH_SHORT).show()
+                    // launch coroutine to upload & save
+                    if (roomName.isBlank()) {
+                        Toast.makeText(context, "Please enter room name", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+                    if (price.isBlank()) {
+                        Toast.makeText(context, "Please enter price", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+                    if (guests.isBlank()) {
+                        Toast.makeText(context, "Please enter guests", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+                    if (selectedImageUri == null) {
+                        Toast.makeText(context, "Please select an image", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+
+                    // start upload
+                    uploading = true
+
+                    // Use coroutine scope in Compose
+                    scope.launch {
+                        try {
+                            // Read image bytes
+                            val bytes = readBytesFromUri(selectedImageUri!!, context.contentResolver)
+                            // Convert to Base64 (ImgBB expects base64 without data URI prefix)
+                            val base64 = Base64.encodeToString(bytes, Base64.DEFAULT)
+
+                            // Upload to ImgBB
+                            val imgUrl = uploadToImgBB(base64)
+
+                            if (imgUrl == null) {
+                                uploading = false
+                                Toast.makeText(context, "Image upload failed", Toast.LENGTH_LONG).show()
+                                return@launch
+                            }
+
+                            // Prepare data map
+                            val amenitiesForSave = selectedAmenityIds.toList()
+                            val roomId = UUID.randomUUID().toString()
+                            val timestamp = System.currentTimeMillis()
+
+                            // get user email from UserPrefs
+                            val userEmail = try {
+                                UserPrefs.getEmail(context) ?: "unknown_user"
+                            } catch (e: Exception) {
+                                "unknown_user"
+                            }
+
+                            // sanitize email for Firebase key (replace '.' with ',')
+                            val sanitizedEmail = userEmail.replace(".", ",")
+
+                            val roomData = mapOf(
+                                "roomId" to roomId,
+                                "title" to roomName,
+                                "description" to description,
+                                "price" to price,
+                                "guests" to guests,
+                                "beds" to beds,
+                                "baths" to baths,
+                                "amenities" to amenitiesForSave,
+                                "imageUrl" to imgUrl,
+                                "timestamp" to timestamp,
+                                "ownerEmail" to userEmail
+                            )
+
+                            // Save to Firebase Realtime Database under Rooms/<sanitizedEmail>/<roomId>
+                            val db = FirebaseDatabase.getInstance().reference
+                            db.child("Rooms")
+                                .child(sanitizedEmail)
+                                .child(roomId)
+                                .setValue(roomData)
+                                .addOnSuccessListener {
+                                    uploading = false
+                                    Toast.makeText(context, "Room posted successfully", Toast.LENGTH_LONG).show()
+                                    // reset form
+                                    roomName = ""
+                                    description = ""
+                                    price = ""
+                                    guests = ""
+                                    beds = ""
+                                    baths = ""
+                                    selectedAmenityIds.clear()
+                                    selectedImageUri = null
+                                    selectedImageBitmap = null
+                                }
+                                .addOnFailureListener { ex ->
+                                    uploading = false
+                                    Toast.makeText(context, "Failed to save room: ${ex.message}", Toast.LENGTH_LONG).show()
+                                }
+
+                        } catch (e: Exception) {
+                            uploading = false
+                            e.printStackTrace()
+                            Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                         }
                     }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp)
+                    .height(48.dp),
+                enabled = !uploading
             ) {
-                Text("Post", color = Color.White)
+                if (uploading) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Posting...")
+                } else {
+                    Text("Post", color = Color.White)
+                }
             }
 
             Spacer(Modifier.height(24.dp))
@@ -381,20 +608,20 @@ fun AddRoomScreen() {
     }
 }
 
+// ----------------- Preview / Activity -----------------
 @Preview(showBackground = true, heightDp = 900)
 @Composable
 fun AddRoomWithAmenitiesPreview() {
     MaterialTheme {
-        AddRoomScreen()
+        AddRoomScreenWithAmenitiesHorizontalWithImageUpload {}
     }
 }
-
 
 class AddRoomActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent{
-            AddRoomScreen()
+        setContent {
+            AddRoomScreenWithAmenitiesHorizontalWithImageUpload(onBack = { finish() })
         }
     }
 }

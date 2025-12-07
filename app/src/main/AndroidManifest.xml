@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+
+
     <application
         android:allowBackup="true"
         android:icon="@drawable/icon_hm"
@@ -10,9 +14,60 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.HotelManagmentApp">
         <activity
-            android:name=".admin.ViewRoomsActivity"
+            android:name=".admin.AdminServicesRequestActivity"
+            android:exported="false" />
+        <activity
+            android:name=".admin.AdminBookedRoomsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".customer.ProfileActivity"
+            android:exported="false" />
+        <activity
+            android:name=".customer.ServiceRequestActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".customer.ContactHotelActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".customer.ContactHotelActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".customer.FoodMenuActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".customer.CustomerHomeActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".customer.MyBookingsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".customer.BookRoomActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".customer.ViewRoomsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".admin.SetHotelContactDetailsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".admin.SetFoodMenuActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".admin.EditRoomActivity"
+            android:exported="false" />
+        <activity
+            android:name=".admin.ManageRoomsActivity"
+            android:exported="false" />
         <activity
             android:name=".admin.AddRoomActivity"
             android:exported="false" />
@@ -36,6 +91,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
     </application>
 
 </manifest>
