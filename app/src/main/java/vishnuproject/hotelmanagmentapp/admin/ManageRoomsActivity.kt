@@ -172,7 +172,7 @@ fun RoomManageCard(
             Text(room.title, fontSize = 20.sp, fontWeight = FontWeight.Bold)
 
             // PRICE
-            Text("₹${room.price}", fontSize = 18.sp, color = MaterialTheme.colorScheme.primary)
+            Text("£${room.price}", fontSize = 18.sp, color = MaterialTheme.colorScheme.primary)
 
             Spacer(modifier = Modifier.height(8.dp))
 

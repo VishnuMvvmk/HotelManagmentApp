@@ -192,7 +192,7 @@ fun RoomCard(
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
                     Text(
-                        text = "₹${room.price}",
+                        text = "£${room.price}",
                         color = Color.White,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold

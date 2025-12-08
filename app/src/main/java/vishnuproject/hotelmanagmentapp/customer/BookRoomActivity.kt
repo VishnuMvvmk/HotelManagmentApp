@@ -169,7 +169,7 @@ fun BookRoomScreen(
                         .background(Color(0xFF6C63FF), RoundedCornerShape(12.dp))
                         .padding(horizontal = 14.dp, vertical = 6.dp)
                 ) {
-                    Text("₹${room.price}", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("£${room.price}", color = Color.White, fontWeight = FontWeight.Bold)
                 }
             }
 

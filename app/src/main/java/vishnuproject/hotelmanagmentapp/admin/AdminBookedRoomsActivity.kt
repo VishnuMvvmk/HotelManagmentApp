@@ -248,7 +248,7 @@ fun BookingAdminCard(
 
             if (room != null) {
                 Spacer(Modifier.height(6.dp))
-                Text("Room Price: ₹${room.price}")
+                Text("Room Price: £${room.price}")
             }
 
             Spacer(Modifier.height(14.dp))
