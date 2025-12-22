@@ -2,6 +2,7 @@ package vishnuproject.hotelmanagmentapp.customer
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -13,10 +14,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -25,21 +31,29 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.database.FirebaseDatabase
 import vishnuproject.hotelmanagmentapp.SignInActivity
 import vishnuproject.hotelmanagmentapp.UserPrefs
-import kotlin.jvm.java
+import vishnuproject.hotelmanagmentapp.ui.theme.PrimaryColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,18 +63,34 @@ fun ProfileScreen(
 ) {
     val context = LocalContext.current
 
-    val userName = UserPrefs.getName(context) ?: "Customer"
-    val userEmail = UserPrefs.getEmail(context) ?: "Not Available"
+    val email = UserPrefs.getEmail(context) ?: ""
+    val emailKey = email.replace(".", ",")
+
+    val userRole = UserPrefs.getRole(context)
+
+    var name by remember { mutableStateOf(UserPrefs.getName(context) ?: "") }
+    var password by remember { mutableStateOf("") }
+    var isSaving by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Profile", fontSize = 22.sp, fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        "My Profile",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, null, tint = Color.White)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = PrimaryColor
+                )
             )
         }
     ) { pad ->
@@ -69,90 +99,219 @@ fun ProfileScreen(
             modifier = Modifier
                 .padding(pad)
                 .fillMaxSize()
-                .background(Color(0xFFF5F5F5)),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .background(Color(0xFFF2F3F7))
         ) {
 
-            Spacer(Modifier.height(30.dp))
-
-            // ------------------- PROFILE AVATAR -------------------
+            // ================= HEADER =================
             Box(
                 modifier = Modifier
-                    .size(110.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF6C63FF)),
+                    .fillMaxWidth()
+                    .height(190.dp)
+                    .background(PrimaryColor),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = userName.take(1).uppercase(),
-                    fontSize = 38.sp,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
-            }
 
-            Spacer(Modifier.height(20.dp))
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
 
-            // ------------------- USER NAME -------------------
-            Text(
-                text = userName,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
-            )
+                    Box(
+                        modifier = Modifier
+                            .size(96.dp)
+                            .clip(CircleShape)
+                            .background(Color.White),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = name.take(1).uppercase(),
+                            fontSize = 36.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = PrimaryColor
+                        )
+                    }
 
-            Spacer(Modifier.height(6.dp))
-
-            // ------------------- USER EMAIL -------------------
-            Text(
-                text = userEmail,
-                fontSize = 16.sp,
-                color = Color.Gray
-            )
-
-            Spacer(Modifier.height(40.dp))
-
-            // ------------------- INFORMATION CARD -------------------
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(6.dp)
-            ) {
-
-                Column(modifier = Modifier.padding(20.dp)) {
+                    Spacer(Modifier.height(12.dp))
 
                     Text(
-                        "Profile Details",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold
+                        name,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White
                     )
 
-                    Spacer(Modifier.height(16.dp))
-
-                    ProfileItem(title = "Name", value = userName)
-                    ProfileItem(title = "Email", value = userEmail)
+                    Text(
+                        email,
+                        fontSize = 14.sp,
+                        color = Color.White.copy(alpha = 0.85f)
+                    )
                 }
             }
 
             Spacer(Modifier.height(20.dp))
 
-            // ------------------- LOGOUT BUTTON -------------------
+            // ================= EDIT DETAILS CARD =================
+            Card(
+                modifier = Modifier
+                    .padding(horizontal = 20.dp)
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                elevation = CardDefaults.cardElevation(10.dp)
+            ) {
+
+                Column(modifier = Modifier.padding(20.dp)) {
+
+                    Text(
+                        "Edit Profile",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    if (userRole == "customer") {
+                        PremiumField(
+                            label = "Full Name",
+                            value = name,
+                            icon = Icons.Default.Person,
+                            onValueChange = { name = it },
+                            enabled = true
+                        )
+                    } else {
+                        PremiumField(
+                            label = "Full Name",
+                            value = name,
+                            icon = Icons.Default.Person,
+                            onValueChange = { name = it }, enabled = false
+                        )
+                    }
+
+
+
+                    Spacer(Modifier.height(14.dp))
+
+                    // -------- EMAIL (READ ONLY) --------
+                    PremiumField(
+                        label = "Email Address",
+                        value = email,
+                        icon = Icons.Default.Email,
+                        enabled = false
+                    )
+
+                    Spacer(Modifier.height(14.dp))
+
+
+                    if (userRole == "customer") {
+
+                        // -------- PASSWORD --------
+                        PremiumField(
+                            label = "New Password",
+                            value = password,
+                            icon = Icons.Default.Lock,
+                            placeholder = "Leave blank to keep same",
+                            onValueChange = { password = it }
+                        )
+
+                        Spacer(Modifier.height(24.dp))
+
+                        // -------- SAVE BUTTON --------
+                        Button(
+                            onClick = {
+                                if (name.isBlank()) {
+                                    Toast.makeText(
+                                        context,
+                                        "Name cannot be empty",
+                                        Toast.LENGTH_SHORT
+                                    )
+                                        .show()
+                                    return@Button
+                                }
+
+                                isSaving = true
+
+                                val updates = mutableMapOf<String, Any>("name" to name)
+                                if (password.isNotBlank()) updates["password"] = password
+
+                                FirebaseDatabase.getInstance()
+                                    .getReference("HotelUsers")
+                                    .child(emailKey)
+                                    .updateChildren(updates)
+                                    .addOnSuccessListener {
+                                        UserPrefs.saveName(context, name)
+                                        password = ""
+                                        isSaving = false
+                                        Toast.makeText(
+                                            context,
+                                            "Profile updated",
+                                            Toast.LENGTH_SHORT
+                                        )
+                                            .show()
+                                    }
+                                    .addOnFailureListener {
+                                        isSaving = false
+                                        Toast.makeText(
+                                            context,
+                                            "Failed: ${it.message}",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            enabled = !isSaving
+                        ) {
+                            Text(if (isSaving) "Saving..." else "Save Changes")
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(24.dp))
+
+            // ================= LOGOUT =================
             Button(
                 onClick = onLogout,
                 modifier = Modifier
-                    .fillMaxWidth()
                     .padding(horizontal = 20.dp)
-                    .height(54.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                    .fillMaxWidth()
+                    .height(52.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE53935)),
+                shape = RoundedCornerShape(14.dp)
             ) {
-                Text("Logout", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Icon(Icons.Default.Logout, null, tint = Color.White)
+                Spacer(Modifier.width(8.dp))
+                Text("Logout", color = Color.White, fontWeight = FontWeight.Bold)
             }
         }
     }
 }
+
+@Composable
+fun PremiumField(
+    label: String,
+    value: String,
+    icon: ImageVector,
+    enabled: Boolean = true,
+    placeholder: String = "",
+    onValueChange: (String) -> Unit = {}
+) {
+    Column {
+        Text(label, fontSize = 13.sp, color = Color.Gray)
+        Spacer(Modifier.height(6.dp))
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = enabled,
+            singleLine = true,
+            placeholder = { Text(placeholder) },
+            leadingIcon = {
+                Icon(icon, contentDescription = null)
+            },
+            shape = RoundedCornerShape(14.dp)
+        )
+    }
+}
+
 
 @Composable
 fun ProfileItem(title: String, value: String) {

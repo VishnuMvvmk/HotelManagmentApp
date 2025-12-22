@@ -42,6 +42,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -68,6 +69,7 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import vishnuproject.hotelmanagmentapp.UserPrefs
 import vishnuproject.hotelmanagmentapp.admin.RoomModel
+import vishnuproject.hotelmanagmentapp.ui.theme.PrimaryColor
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -84,7 +86,7 @@ data class BookingModel(
     val toDate: String = "",
     val guestName: String = "",
     val totalGuests: String = "",
-    val bookingStatus: String = "", // Upcoming or Past
+    var bookingStatus: String = "", // Upcoming or Past
     val timestamp: Long = 0L
 )
 
@@ -118,12 +120,15 @@ fun ViewRoomsScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Available Rooms") },
+                title = { Text("Available Rooms", color = Color.White) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "", tint = Color.White)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = PrimaryColor
+                )
             )
         }
     ) { pad ->

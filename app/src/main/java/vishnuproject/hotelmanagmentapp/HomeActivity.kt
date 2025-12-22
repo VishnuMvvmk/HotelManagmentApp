@@ -29,6 +29,7 @@ import vishnuproject.hotelmanagmentapp.admin.SetFoodMenuActivity
 import vishnuproject.hotelmanagmentapp.admin.SetHotelContactDetailsActivity
 import vishnuproject.hotelmanagmentapp.customer.BookingModel
 import vishnuproject.hotelmanagmentapp.customer.ProfileActivity
+import vishnuproject.hotelmanagmentapp.ui.theme.PrimaryColor
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -139,15 +140,18 @@ fun HotelHomeScreen() {
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Hotel Manager") },
+                title = { Text("Hotel Manager", color = Color.White) },
                 actions = {
                     IconButton(onClick = {
                         context.startActivity(Intent(context, ProfileActivity::class.java))
 
                     }) {
-                        Icon(Icons.Default.AccountBox, contentDescription = "Profile")
+                        Icon(Icons.Default.AccountBox, contentDescription = "Profile", tint = Color.White)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = PrimaryColor
+                )
             )
         }
     ) { padding ->

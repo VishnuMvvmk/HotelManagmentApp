@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import com.google.firebase.database.*
 import vishnuproject.hotelmanagmentapp.UserPrefs
+import vishnuproject.hotelmanagmentapp.ui.theme.PrimaryColor
 
 data class FoodItem(
     val itemId: String = "",
@@ -70,12 +71,15 @@ fun FoodMenuScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Food Menu", fontSize = 22.sp, fontWeight = FontWeight.Bold) },
+                title = { Text("Food Menu", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "", tint = Color.White)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = PrimaryColor
+                )
             )
         }
     ) { pad ->

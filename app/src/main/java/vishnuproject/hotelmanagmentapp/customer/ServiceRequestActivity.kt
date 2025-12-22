@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import com.google.firebase.database.FirebaseDatabase
 import vishnuproject.hotelmanagmentapp.UserPrefs
+import vishnuproject.hotelmanagmentapp.ui.theme.PrimaryColor
 import java.util.UUID
 
 data class ServiceRequestModel(
@@ -65,12 +66,15 @@ fun ServiceRequestScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Service Request", fontSize = 22.sp, fontWeight = FontWeight.Bold) },
+                title = { Text("Service Request", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "", tint = Color.White)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = PrimaryColor
+                )
             )
         }
     ) { pad ->

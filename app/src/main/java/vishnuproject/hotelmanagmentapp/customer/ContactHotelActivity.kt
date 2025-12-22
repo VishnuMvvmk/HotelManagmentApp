@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.database.*
 import vishnuproject.hotelmanagmentapp.UserPrefs
+import vishnuproject.hotelmanagmentapp.ui.theme.PrimaryColor
 
 data class HotelContactModel(
     val email: String = "",
@@ -66,12 +67,15 @@ fun HotelContactScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Hotel Contact Details", fontSize = 22.sp, fontWeight = FontWeight.Bold) },
+                title = { Text("Hotel Contact Details", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "", tint = Color.White)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = PrimaryColor
+                )
             )
         }
     ) { pad ->

@@ -38,6 +38,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -58,6 +59,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.database.FirebaseDatabase
 import vishnuproject.hotelmanagmentapp.UserPrefs
 import vishnuproject.hotelmanagmentapp.admin.RoomModel
+import vishnuproject.hotelmanagmentapp.ui.theme.PrimaryColor
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -118,12 +120,15 @@ fun BookRoomScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Book Room", fontSize = 20.sp, fontWeight = FontWeight.SemiBold) },
+                title = { Text("Book Room", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Color.White) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = PrimaryColor
+                )
             )
         }
     ) { pad ->

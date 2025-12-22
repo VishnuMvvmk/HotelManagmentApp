@@ -87,6 +87,17 @@ fun AdminServiceRequestScreen(
             return@Scaffold
         }
 
+        if(requestList.isEmpty())
+        {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(pad),
+                contentAlignment = Alignment.Center
+            ) { Text("No Requests Received", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.Gray)}
+            return@Scaffold
+        }
+
         val pendingList = requestList.filter { it.status == "Pending" }
         val progressList = requestList.filter { it.status == "In Progress" }
         val completedList = requestList.filter { it.status == "Completed" }

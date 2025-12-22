@@ -427,7 +427,7 @@ fun AddRoomScreenWithAmenitiesHorizontalWithImageUpload(
                     }
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Selected image will be uploaded to ImgBB and URL saved to Firebase.",
+                        "Selected image will be upload",
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.width(220.dp)
                     )
