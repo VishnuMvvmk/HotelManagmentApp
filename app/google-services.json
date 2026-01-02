@@ -1,15 +1,16 @@
 {
   "project_info": {
     "project_number": "1042107106974",
+    "firebase_url": "https://hotelmanagementapp-119c4-default-rtdb.firebaseio.com",
     "project_id": "hotelmanagementapp-119c4",
     "storage_bucket": "hotelmanagementapp-119c4.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1042107106974:android:aaf6f9d0dc45167fae9d8f",
+        "mobilesdk_app_id": "1:1042107106974:android:b3b06dc7ba17425eae9d8f",
         "android_client_info": {
-          "package_name": "vishnuproject.hotelmanagmentapp"
+          "package_name": "s348786vishnuvardhan.hotelmanagmentapp"
         }
       },
       "oauth_client": [],

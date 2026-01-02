@@ -7,13 +7,13 @@ plugins {
 }
 
 android {
-    namespace = "vishnuproject.hotelmanagmentapp"
+    namespace = "s348786vishnuvardhan.hotelmanagmentapp"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "vishnuproject.hotelmanagmentapp"
+        applicationId = "s348786vishnuvardhan.hotelmanagmentapp"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
